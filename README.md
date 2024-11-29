@@ -91,14 +91,17 @@ COVID-19-Regional-Analysis/
 ---
 
 ## 📈 Example Visualizations
-### Total Cases Trend (Interactive)
-![Total Cases Trend](https://user-images.githubusercontent.com/example.png)
+## Total Cases Trend
 
-### Vaccination Progress
-![Vaccination Progress](https://user-images.githubusercontent.com/example2.png)
+![Total Cases Trend](images/total_cases_trend.png)
 
-### GDP Per Capita vs Total Cases
-![GDP Scatter](https://user-images.githubusercontent.com/example3.png)
+## Vaccination Progress
+
+![Vaccination Progress](images/vaccination_progress.png)
+
+## GDP Per Capita vs Total Cases
+
+![GDP Scatter](images/gdp_scatter.png)
 
 ---
 
