@@ -1,9 +1,9 @@
-name: Weekly OWID COVID-19 Data Update
+name: Monthly OWID COVID-19 Data Update
 
 on:
  schedule:
-   - cron: '0 0 * * 0'  # Runs every Sunday at midnight UTC
- workflow_dispatch:  # Allows manual triggering
+   - cron: '0 0 1 * *'  # Runs at midnight on the first of each month
+ workflow_dispatch:
 
 permissions:
  contents: write
@@ -28,7 +28,10 @@ jobs:
          pip install requests pandas
 
      - name: Run data update script
-       run: python scripts/update_data.py
+       id: update
+       run: |
+         python scripts/update_data.py
+         echo "update_time=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
      - name: Check for Changes
        id: changes
@@ -37,54 +40,52 @@ jobs:
            echo "changes_detected=false" >> $GITHUB_OUTPUT
          else
            echo "changes_detected=true" >> $GITHUB_OUTPUT
+           echo "Has changes in data files"
          fi
 
-     - name: Commit and push changes
+     - name: Commit changes
        if: steps.changes.outputs.changes_detected == 'true'
-       env:
-         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
        run: |
          git config --local user.email "actions@github.com"
          git config --local user.name "GitHub Actions"
          git add data/owid-covid-data.csv
-         git commit -m "chore: Update COVID data $(date +'%Y-%m-%d')"
+         git commit -m "data: Update COVID data for $(date +'%B %Y')"
          git push
 
-     - name: Create Issue on Failure
-       if: failure() && steps.changes.outputs.changes_detected != 'false'
+     - name: Create Monthly Report Issue
+       uses: actions/github-script@v6
+       with:
+         script: |
+           const changeStatus = '${{ steps.changes.outputs.changes_detected }}' === 'true' 
+             ? 'Updates detected and committed'
+             : 'No updates found';
+           
+           await github.rest.issues.create({
+             owner: context.repo.owner,
+             repo: context.repo.repo,
+             title: `COVID Data Monthly Report - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+             body: `
+             ## Monthly Data Update Report
+             - Check Time: ${new Date().toISOString()}
+             - Status: ${changeStatus}
+             - Update Period: Monthly
+             
+             ${changeStatus === 'Updates detected and committed' 
+               ? '### Changes\n- New data committed to repository\n- See commit history for details'
+               : '### No Changes\n- Data remains current\n- No updates required'}
+             `,
+             labels: ['monthly-report', changeStatus === 'Updates detected and committed' ? 'data-updated' : 'no-changes']
+           });
+
+     - name: Notify on Failure
+       if: failure()
        uses: actions/github-script@v6
        with:
          script: |
            github.rest.issues.create({
              owner: context.repo.owner,
              repo: context.repo.repo,
-             title: 'COVID Data Update Failed',
-             body: `The automated data update workflow failed at ${new Date().toISOString()}. Check workflow logs.`,
+             title: `COVID Data Update Failed - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+             body: 'Monthly data update workflow failed. Check workflow logs.',
              labels: ['automation-failure', 'bug']
-           })
-
-     - name: Create Issue for Changes
-       if: steps.changes.outputs.changes_detected == 'true'
-       uses: actions/github-script@v6
-       with:
-         script: |
-           github.rest.issues.create({
-             owner: context.repo.owner,
-             repo: context.repo.repo,
-             title: 'COVID Data Updated Successfully',
-             body: `Data update completed at ${new Date().toISOString()}`,
-             labels: ['automation-success']
-           })
-
-     - name: Create Issue for No Changes
-       if: steps.changes.outputs.changes_detected == 'false'
-       uses: actions/github-script@v6
-       with:
-         script: |
-           github.rest.issues.create({
-             owner: context.repo.owner,
-             repo: context.repo.repo,
-             title: 'COVID Data Check - No Updates',
-             body: `Data check completed at ${new Date().toISOString()}. No new updates found.`,
-             labels: ['automation-check']
-           })
+           });
