@@ -5,12 +5,20 @@ on:
     - cron: '0 0 * * 0'  # Runs every Sunday at midnight UTC
   workflow_dispatch:  # Allows manual triggering of the workflow
 
+permissions:
+  contents: write
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Ensure Main Branch
+        run: git checkout main
 
       - uses: actions/setup-python@v4
         with:
@@ -21,23 +29,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests pandas
 
+      - name: Show Modification Time Before Update
+        run: stat data/owid-covid-data.csv || echo "File does not exist"
+
       - name: Run data update script
         run: python scripts/update_data.py
 
+      - name: Show Modification Time After Update
+        run: stat data/owid-covid-data.csv
+
+      - name: Show Git Status
+        run: git status
+
       - name: Commit and push changes
-        if: success()  # Only run this step if previous steps succeeded
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add data/owid-covid-data.csv
-          git commit -m "Automated weekly data update" --allow-empty
+          git commit -m "Automated weekly data update" --allow-empty || echo "No changes to commit"
           git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-
+          
       - name: Create Issue on Failure
-        if: failure()  # Only run this step if a previous step fails
+        if: failure()
         uses: actions/github-script@v6
         with:
           script: |
@@ -50,7 +66,7 @@ jobs:
             })
 
       - name: Create Issue on Success
-        if: success()  # Only run this step if all steps succeeded
+        if: success()
         uses: actions/github-script@v6
         with:
           script: |
