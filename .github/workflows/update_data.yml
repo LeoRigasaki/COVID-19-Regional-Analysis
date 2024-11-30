@@ -1,49 +1,61 @@
-name: Weekly OWID COVID-19 Data Update
+name: Monthly OWID COVID-19 Data Update
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # Runs every Sunday at midnight UTC
-  workflow_dispatch:  # Allows manual triggering of the workflow
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests pandas
 
-      - name: Run Data Update Script
+      - name: Run data update script
         run: python scripts/update_data.py
 
       - name: Check for Changes
         id: check_changes
         run: |
-          if [ -z "$(git status --porcelain)" ]; then
-            echo "changes_detected=false" >> $GITHUB_ENV
+          if git diff --quiet; then
+            echo "status=unchanged" >> $GITHUB_OUTPUT
           else
-            echo "changes_detected=true" >> $GITHUB_ENV
+            echo "status=changed" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit and Push Changes
-        if: env.changes_detected == 'true'
+      - name: Create Monthly Report
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = '${{ steps.check_changes.outputs.status }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `COVID Data Check - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+              body: `Data check completed at ${new Date().toISOString()}. Status: ${status === 'changed' ? 'Updates found' : 'No new updates'}`,
+              labels: [status === 'changed' ? 'data-updated' : 'no-changes']
+            });
+
+      - name: Commit if Changed
+        if: steps.check_changes.outputs.status == 'changed'
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add data/owid-covid-data.csv
-          git commit -m "Automated data update for $(date +'%B %Y')"
+          git commit -m "data: Update COVID data for $(date +'%B %Y')"
           git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: No Changes Detected
-        if: env.changes_detected == 'false'
-        run: echo "No changes to commit. Skipping the commit and push steps."
