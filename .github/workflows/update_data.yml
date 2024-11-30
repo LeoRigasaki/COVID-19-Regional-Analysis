@@ -1,77 +1,90 @@
 name: Weekly OWID COVID-19 Data Update
 
 on:
-  schedule:
-    - cron: '0 0 * * 0'  # Runs every Sunday at midnight UTC
-  workflow_dispatch:  # Allows manual triggering of the workflow
+ schedule:
+   - cron: '0 0 * * 0'  # Runs every Sunday at midnight UTC
+ workflow_dispatch:  # Allows manual triggering
 
 permissions:
-  contents: write
-  issues: write
+ contents: write
+ issues: write
 
 jobs:
-  update-data:
-    runs-on: ubuntu-latest
+ update-data:
+   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Fetch all history for accurate comparison
+   steps:
+     - uses: actions/checkout@v3
+       with:
+         fetch-depth: 0
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+     - uses: actions/setup-python@v4
+       with:
+         python-version: '3.x'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests pandas
+     - name: Install dependencies
+       run: |
+         python -m pip install --upgrade pip
+         pip install requests pandas
 
-      - name: Run data update script
-        run: python scripts/update_data.py
+     - name: Run data update script
+       run: python scripts/update_data.py
 
-      - name: Check for Changes
-        id: changes
-        run: |
-          if [ -z "$(git status --porcelain)" ]; then
-            echo "changes_detected=false" >> $GITHUB_OUTPUT
-          else
-            echo "changes_detected=true" >> $GITHUB_OUTPUT
-          fi
+     - name: Check for Changes
+       id: changes
+       run: |
+         if [ -z "$(git status --porcelain)" ]; then
+           echo "changes_detected=false" >> $GITHUB_OUTPUT
+         else
+           echo "changes_detected=true" >> $GITHUB_OUTPUT
+         fi
 
-      - name: Commit and push changes
-        if: steps.changes.outputs.changes_detected == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          git add data/owid-covid-data.csv
-          git commit -m "Automated weekly data update"
-          git push
+     - name: Commit and push changes
+       if: steps.changes.outputs.changes_detected == 'true'
+       env:
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+       run: |
+         git config --local user.email "actions@github.com"
+         git config --local user.name "GitHub Actions"
+         git add data/owid-covid-data.csv
+         git commit -m "chore: Update COVID data $(date +'%Y-%m-%d')"
+         git push
 
-      - name: Create Issue on Failure
-        if: failure() && steps.changes.outputs.changes_detected != 'false'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'COVID Data Update Failed',
-              body: `The automated data update workflow failed at ${new Date().toISOString()}. Please check the workflow logs.`,
-              labels: ['automation-failure', 'bug']
-            })
+     - name: Create Issue on Failure
+       if: failure() && steps.changes.outputs.changes_detected != 'false'
+       uses: actions/github-script@v6
+       with:
+         script: |
+           github.rest.issues.create({
+             owner: context.repo.owner,
+             repo: context.repo.repo,
+             title: 'COVID Data Update Failed',
+             body: `The automated data update workflow failed at ${new Date().toISOString()}. Check workflow logs.`,
+             labels: ['automation-failure', 'bug']
+           })
 
-      - name: Create Issue on Success
-        if: steps.changes.outputs.changes_detected == 'true'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'COVID Data Updated Successfully',
-              body: `Data update completed successfully at ${new Date().toISOString()}.`,
-              labels: ['automation-success']
-            })
+     - name: Create Issue for Changes
+       if: steps.changes.outputs.changes_detected == 'true'
+       uses: actions/github-script@v6
+       with:
+         script: |
+           github.rest.issues.create({
+             owner: context.repo.owner,
+             repo: context.repo.repo,
+             title: 'COVID Data Updated Successfully',
+             body: `Data update completed at ${new Date().toISOString()}`,
+             labels: ['automation-success']
+           })
+
+     - name: Create Issue for No Changes
+       if: steps.changes.outputs.changes_detected == 'false'
+       uses: actions/github-script@v6
+       with:
+         script: |
+           github.rest.issues.create({
+             owner: context.repo.owner,
+             repo: context.repo.repo,
+             title: 'COVID Data Check - No Updates',
+             body: `Data check completed at ${new Date().toISOString()}. No new updates found.`,
+             labels: ['automation-check']
+           })
