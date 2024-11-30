@@ -1,5 +1,3 @@
-# .github/workflows/update_data.yml
-
 name: Weekly OWID COVID-19 Data Update
 
 on:
@@ -12,11 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
@@ -29,6 +25,7 @@ jobs:
         run: python scripts/update_data.py
 
       - name: Commit and push changes
+        if: success()  # Only run this step if the previous steps succeeded
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
@@ -37,3 +34,29 @@ jobs:
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Issue on Failure
+        if: failure()  # Only run this step if a previous step fails
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'COVID Data Update Failed',
+              body: `The automated data update workflow failed at ${new Date().toISOString()}. Please check the workflow logs.`,
+              labels: ['automation-failure', 'bug']
+            })
+
+      - name: Create Issue on Success
+        if: success()  # Only run this step if all steps succeeded
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'COVID Data Updated Successfully',
+              body: `Data update completed successfully at ${new Date().toISOString()}.`,
+              labels: ['automation-success']
+            })
