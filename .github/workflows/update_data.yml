@@ -1,91 +1,49 @@
-name: Monthly OWID COVID-19 Data Update
+name: Weekly OWID COVID-19 Data Update
 
 on:
- schedule:
-   - cron: '0 0 1 * *'  # Runs at midnight on the first of each month
- workflow_dispatch:
-
-permissions:
- contents: write
- issues: write
+  schedule:
+    - cron: '0 0 * * 0'  # Runs every Sunday at midnight UTC
+  workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
- update-data:
-   runs-on: ubuntu-latest
+  update-data:
+    runs-on: ubuntu-latest
 
-   steps:
-     - uses: actions/checkout@v3
-       with:
-         fetch-depth: 0
+    steps:
+      - uses: actions/checkout@v3
 
-     - uses: actions/setup-python@v4
-       with:
-         python-version: '3.x'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-     - name: Install dependencies
-       run: |
-         python -m pip install --upgrade pip
-         pip install requests pandas
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas
 
-     - name: Run data update script
-       id: update
-       run: |
-         python scripts/update_data.py
-         echo "update_time=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      - name: Run Data Update Script
+        run: python scripts/update_data.py
 
-     - name: Check for Changes
-       id: changes
-       run: |
-         if [ -z "$(git status --porcelain)" ]; then
-           echo "changes_detected=false" >> $GITHUB_OUTPUT
-         else
-           echo "changes_detected=true" >> $GITHUB_OUTPUT
-           echo "Has changes in data files"
-         fi
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changes_detected=false" >> $GITHUB_ENV
+          else
+            echo "changes_detected=true" >> $GITHUB_ENV
+          fi
 
-     - name: Commit changes
-       if: steps.changes.outputs.changes_detected == 'true'
-       run: |
-         git config --local user.email "actions@github.com"
-         git config --local user.name "GitHub Actions"
-         git add data/owid-covid-data.csv
-         git commit -m "data: Update COVID data for $(date +'%B %Y')"
-         git push
+      - name: Commit and Push Changes
+        if: env.changes_detected == 'true'
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add data/owid-covid-data.csv
+          git commit -m "Automated data update for $(date +'%B %Y')"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-     - name: Create Monthly Report Issue
-       uses: actions/github-script@v6
-       with:
-         script: |
-           const changeStatus = '${{ steps.changes.outputs.changes_detected }}' === 'true' 
-             ? 'Updates detected and committed'
-             : 'No updates found';
-           
-           await github.rest.issues.create({
-             owner: context.repo.owner,
-             repo: context.repo.repo,
-             title: `COVID Data Monthly Report - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`,
-             body: `
-             ## Monthly Data Update Report
-             - Check Time: ${new Date().toISOString()}
-             - Status: ${changeStatus}
-             - Update Period: Monthly
-             
-             ${changeStatus === 'Updates detected and committed' 
-               ? '### Changes\n- New data committed to repository\n- See commit history for details'
-               : '### No Changes\n- Data remains current\n- No updates required'}
-             `,
-             labels: ['monthly-report', changeStatus === 'Updates detected and committed' ? 'data-updated' : 'no-changes']
-           });
-
-     - name: Notify on Failure
-       if: failure()
-       uses: actions/github-script@v6
-       with:
-         script: |
-           github.rest.issues.create({
-             owner: context.repo.owner,
-             repo: context.repo.repo,
-             title: `COVID Data Update Failed - ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`,
-             body: 'Monthly data update workflow failed. Check workflow logs.',
-             labels: ['automation-failure', 'bug']
-           });
+      - name: No Changes Detected
+        if: env.changes_detected == 'false'
+        run: echo "No changes to commit. Skipping the commit and push steps."
