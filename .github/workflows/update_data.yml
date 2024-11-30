@@ -6,7 +6,8 @@ on:
   workflow_dispatch:  # Allows manual triggering of the workflow
 
 permissions:
-  contents: write  # Ensure the workflow has write permissions
+  contents: write
+  issues: write
 
 jobs:
   update-data:
@@ -33,9 +34,9 @@ jobs:
         id: changes
         run: |
           if [ -z "$(git status --porcelain)" ]; then
-            echo "##[set-output name=changes_detected;]false"
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
           else
-            echo "##[set-output name=changes_detected;]true"
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Commit and push changes
@@ -50,7 +51,7 @@ jobs:
           git push
 
       - name: Create Issue on Failure
-        if: failure()
+        if: failure() && steps.changes.outputs.changes_detected != 'false'
         uses: actions/github-script@v6
         with:
           script: |
@@ -63,7 +64,7 @@ jobs:
             })
 
       - name: Create Issue on Success
-        if: success() && steps.changes.outputs.changes_detected == 'true'
+        if: steps.changes.outputs.changes_detected == 'true'
         uses: actions/github-script@v6
         with:
           script: |
