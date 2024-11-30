@@ -25,15 +25,16 @@ jobs:
         run: python scripts/update_data.py
 
       - name: Commit and push changes
-        if: success()  # Only run this step if the previous steps succeeded
+        if: success()  # Only run this step if previous steps succeeded
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add data/owid-covid-data.csv
-          git commit -m "Automated weekly data update"
+          git commit -m "Automated weekly data update" --allow-empty
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
 
       - name: Create Issue on Failure
         if: failure()  # Only run this step if a previous step fails
