@@ -1,33 +1,32 @@
 # COVID-19 Regional Analysis: South Asia vs Middle East
 
 ## 📖 Overview
-This project examines the impact of COVID-19 across South Asia and the Middle East. The analysis focuses on:
-- **COVID-19 Trends**: Total cases, positivity rates, and ICU patient trends.
-- **Vaccination Progress**: How GDP and population density relate to vaccination rates.
-- **Statistical Testing**: Hypothesis testing (t-test) to compare vaccination progress across regions.
-- **Predictive Modeling**: Linear regression to identify key predictors of total cases.
+This project provides an in-depth analysis of the COVID-19 pandemic's impact across South Asia and the Middle East. It explores trends, vaccination progress, statistical relationships, and predictive insights, offering visualizations and actionable insights.
 
-The project uses interactive and static visualizations, along with Python-based data analysis techniques.
+### Key Focus Areas:
+- **COVID-19 Trends**: Analyze total cases, positivity rates, and ICU patient trends.
+- **Vaccination Progress**: Investigate the relationship between GDP, population density, and vaccination rates.
+- **Statistical Testing**: Perform hypothesis testing (t-test) to compare vaccination progress across regions.
+- **Predictive Modeling**: Use linear regression to predict total cases based on key factors.
 
 ---
 
 ## ✨ Key Features
-- 📈 **Time-Series Trends**: Interactive visualizations for total cases, vaccination progress, and positivity rates.
-- 📊 **Correlation Analysis**: Explore relationships between GDP, vaccination progress, and population density.
-- 📉 **Predictive Modeling**: Use linear regression to predict total cases based on demographic and health-related factors.
-- 🔬 **Hypothesis Testing**: Perform a t-test to compare vaccination progress between South Asia and the Middle East.
-- 📂 **Interactive Visualizations**: Dropdown selectors for country-specific analysis.
+- 📈 **Time-Series Trends**: Visualize total cases, vaccination progress, and positivity rates with interactive plots.
+- 🔗 **Automated Updates**: Weekly updates of COVID-19 data using GitHub Actions.
+- 📊 **Correlation Analysis**: Uncover relationships between GDP, vaccination progress, and population density.
+- 🔍 **Predictive Modeling**: Linear regression to identify factors influencing total cases.
+- 🔬 **Hypothesis Testing**: Compare vaccination progress between South Asia and the Middle East.
+- 📂 **Interactive Analysis**: Use dropdown selectors for country-specific insights.
 
 ---
 
 ## 📊 Dataset
 - **Source**: [Our World in Data](https://ourworldindata.org/coronavirus)
 - **File**: `data/owid-covid-data.csv`
-- **Description**: Contains global COVID-19 statistics, including:
-  - Total cases and deaths
-  - Vaccination data
-  - GDP per capita
-  - Population density
+- **Description**:
+  - Global COVID-19 statistics: total cases, deaths, vaccination data.
+  - Economic and demographic data: GDP per capita, population density.
 
 ---
 
@@ -60,7 +59,8 @@ Activate the virtual environment:
 pip install -r requirements.txt
 ```
 
-### 4️⃣ Run the Jupyter Notebook
+### 4️⃣ Run the Analysis
+#### Option 1: Using Jupyter Notebook
 Navigate to the `notebook` directory and start the Jupyter Notebook:
 ```bash
 cd notebook
@@ -69,11 +69,8 @@ jupyter notebook
 
 Open `covid-analysis.ipynb` in your browser.
 
-### 5️⃣ Deactivate the Virtual Environment (Optional)
-After finishing your work:
-```bash
-deactivate
-```
+#### Option 2: Automated Update Workflow
+This project includes a **GitHub Actions Workflow** to automate weekly updates of the dataset. The dataset updates every Sunday at midnight UTC. Ensure the workflow is enabled in the repository's **Actions** tab.
 
 ---
 
@@ -81,56 +78,72 @@ deactivate
 ```
 COVID-19-Regional-Analysis/
 ├── data/                    # Dataset directory
-│   └── owid-covid-data.csv  # Source data file
+│   ├── owid-covid-data.csv  # COVID-19 data file
+│   └── last_updated.txt     # Metadata for last update timestamp
 ├── notebook/                # Jupyter notebooks for analysis
 │   └── covid-analysis.ipynb # Main notebook
-├── requirements.txt         # Required dependencies
+├── scripts/                 # Python scripts for automation
+│   └── update_data.py       # Automates data updates
+├── .github/workflows/       # GitHub Actions workflows
+│   └── update_data.yml      # Workflow for weekly data updates
+├── images/                  # Example visualizations
+├── requirements.txt         # Python dependencies
 └── README.md                # Project documentation
 ```
 
 ---
 
 ## 📈 Example Visualizations
-## Total Cases Trend
 
+### Total Cases Trend
 ![Total Cases Trend](images/total_cases_trend.png)
 
-## Vaccination Progress
-
+### Vaccination Progress
 ![Vaccination Progress](images/vaccination_progress.png)
 
-## GDP Per Capita vs Total Cases
-
+### GDP Per Capita vs Total Cases
 ![GDP Scatter](images/gdp_scatter.png)
 
 ---
 
 ## ⚡ Results and Insights
+
+### Key Findings:
 1. **Vaccination Progress**:
-   - Middle Eastern countries show stronger correlation with GDP compared to South Asia.
-   - South Asia demonstrates lower vaccination progress due to socio-economic constraints.
+   - Middle Eastern countries exhibit stronger correlation with GDP than South Asia.
+   - Socio-economic constraints contribute to slower vaccination progress in South Asia.
 
 2. **Positivity Rates**:
-   - South Asia shows spikes in positivity rates due to late detection and testing issues.
-   - Middle East maintains a consistent positivity rate trend.
+   - South Asia experiences spikes in positivity rates due to testing delays.
+   - Middle East demonstrates consistent positivity rate trends.
 
-3. **Regression Findings**:
-   - GDP per capita and vaccination progress significantly predict total cases.
-   - Population density shows weaker correlation.
+3. **Regression Analysis**:
+   - GDP per capita and vaccination progress are significant predictors of total cases.
+   - Population density has a weaker correlation.
 
 4. **Hypothesis Testing**:
-   - Statistically significant differences in vaccination progress between the two regions (p-value < 0.05).
+   - Significant differences exist in vaccination progress between the regions (p-value < 0.05).
 
 ---
 
 ## 🚀 Future Improvements
-- Include additional features like government stringency index and healthcare capacity.
-- Apply advanced predictive models (e.g., Random Forest).
-- Extend analysis to other continents or global comparisons.
+- Extend analysis to additional regions for global comparisons.
+- Integrate advanced predictive models (e.g., Random Forest, XGBoost).
+- Include government stringency index and healthcare capacity metrics.
+- Develop a fully interactive dashboard with Plotly Dash.
 
 ---
 
 ## 🤝 Contributions
-Feel free to fork this repository, submit pull requests, or report issues.
+Contributions are welcome! Feel free to:
+1. Fork the repository.
+2. Submit pull requests for new features or fixes.
+3. Report any issues or suggestions.
+
+---
+
+## 🔗 References
+- [Our World in Data](https://ourworldindata.org/coronavirus)
+- [COVID-19 Data Repository](https://github.com/owid/covid-19-data)
 
 ---
